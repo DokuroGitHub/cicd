@@ -1,13 +1,19 @@
+def getCredentialsId(String repoUrl) {
+    if (repoUrl.contains('github.com')) { return 'github-credentials' }
+    if (repoUrl.contains('fptshop.com.vn')) { return 'gitlab-credentials' }
+    return 'github-credentials'
+}
+
 def checkout(String repoUrl, String branch) {
     dir("source") {
-        git branch: branch, url: repoUrl, credentialsId: 'git-credentials'
+        git branch: branch, url: repoUrl, credentialsId: getCredentialsId(repoUrl)
     }
 }
 
 def checkoutConfig(String configRepoUrl) {
     if (!configRepoUrl?.trim()) { return }
     dir("config-source") {
-        git branch: 'main', url: configRepoUrl, credentialsId: 'git-credentials'
+        git branch: 'main', url: configRepoUrl, credentialsId: getCredentialsId(configRepoUrl)
     }
 }
 

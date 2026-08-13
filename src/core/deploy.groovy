@@ -6,17 +6,26 @@ def deployViaSSH(Map args) {
         error("No deploy host for '${args.service}' in '${args.environment}'")
     }
 
+    def envFileFlag = ""
+    if (fileExists("config-source/env.${args.environment}")) {
+        envFileFlag = "--env-file /tmp/${args.service}.env"
+    }
+
     withCredentials([sshUserPrivateKey(
         credentialsId: 'deploy-ssh-key',
         keyFileVariable: 'SSH_KEY',
         usernameVariable: 'SSH_USER'
     )]) {
+        if (envFileFlag) {
+            sh "scp -i \$SSH_KEY -o StrictHostKeyChecking=no -P ${port} config-source/env.${args.environment} \$SSH_USER@${host}:/tmp/${args.service}.env"
+        }
         sh """
             ssh -i \$SSH_KEY -o StrictHostKeyChecking=no -p ${port} \$SSH_USER@${host} << 'EOF'
                 docker pull ${args.image}:${args.tag}
                 docker stop ${args.service} || true
                 docker rm ${args.service} || true
                 docker run -d --name ${args.service} --restart unless-stopped \
+                    ${envFileFlag} \
                     -p ${args.config.port}:${args.config.containerPort} \
                     ${args.image}:${args.tag}
             EOF

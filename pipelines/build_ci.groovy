@@ -1,4 +1,4 @@
-def config, buildFn, utilsFn, notifyFn
+def buildFn, utilsFn, notifyFn
 
 pipeline {
     agent any
@@ -24,7 +24,6 @@ pipeline {
                     utilsFn = load 'src/core/utils.groovy'
                     notifyFn = load 'src/integrations/notify.groovy'
                     utilsFn.validateParams(params)
-                    config = utilsFn.loadServiceConfig(params.SERVICE)
                 }
             }
         }
@@ -38,16 +37,22 @@ pipeline {
             }
         }
 
+        stage('Test') {
+            steps {
+                dir("source") {
+                    script {
+                        if (fileExists('Makefile')) {
+                            sh "make test"
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Build & Push') {
             steps {
                 script {
-                    buildFn.buildAndPush(
-                        image: env.IMAGE,
-                        tag: env.TAG,
-                        environment: 'ci',
-                        context: config.dockerContext ?: '.',
-                        dockerfile: config.dockerfile ?: 'Dockerfile'
-                    )
+                    buildFn.buildAndPush(image: env.IMAGE, tag: env.TAG, environment: 'ci')
                 }
             }
         }

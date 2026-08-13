@@ -18,12 +18,7 @@ def checkoutConfig(String configRepoUrl) {
 }
 
 def buildAndPush(Map args) {
-    def environment = args.environment ?: 'ci'
-
     dir("source") {
-        if (fileExists("../config-source/env.${environment}")) {
-            sh "cp ../config-source/env.${environment} .env"
-        }
         withCredentials([usernamePassword(
             credentialsId: 'dockerhub-credentials',
             usernameVariable: 'DOCKER_USER',

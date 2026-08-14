@@ -4,10 +4,16 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'BRANCH', defaultValue: '')
         string(name: 'SERVICE', defaultValue: '')
         string(name: 'REPO_URL', defaultValue: '')
-        string(name: 'CONFIG_REPO_URL', defaultValue: '')
+        string(name: 'BRANCH', defaultValue: '')
+        string(name: 'ENV_REPO_URL', defaultValue: '')
+        string(name: 'DEPLOY_HOST', defaultValue: '')
+        string(name: 'SSH_PORT', defaultValue: '22')
+        string(name: 'PORT', defaultValue: '8080')
+        string(name: 'CONTAINER_PORT', defaultValue: '8080')
+        string(name: 'DOCKERFILE', defaultValue: 'Dockerfile')
+        string(name: 'DOCKER_CONTEXT', defaultValue: '.')
     }
 
     environment {
@@ -24,7 +30,7 @@ pipeline {
                     deployFn = load 'src/core/deploy.groovy'
                     utilsFn = load 'src/core/utils.groovy'
                     notifyFn = load 'src/integrations/notify.groovy'
-                    utilsFn.validateParams(params)
+                    utilsFn.validateParams(params, ['SERVICE', 'REPO_URL', 'BRANCH', 'DEPLOY_HOST'])
                 }
             }
         }
@@ -33,7 +39,7 @@ pipeline {
             steps {
                 script {
                     buildFn.checkout(params.REPO_URL, params.BRANCH)
-                    buildFn.checkoutConfig(params.CONFIG_REPO_URL)
+                    buildFn.checkoutEnv(params.ENV_REPO_URL)
                 }
             }
         }
@@ -53,7 +59,13 @@ pipeline {
         stage('Build & Push') {
             steps {
                 script {
-                    buildFn.buildAndPush(image: env.IMAGE, tag: env.TAG)
+                    def config = utilsFn.buildConfig(params)
+                    buildFn.buildAndPush(
+                        image: env.IMAGE,
+                        tag: env.TAG,
+                        dockerfile: config.dockerfile,
+                        context: config.dockerContext
+                    )
                 }
             }
         }
@@ -61,7 +73,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    def config = utilsFn.loadServiceConfig(params.SERVICE)
+                    def config = utilsFn.buildConfig(params)
                     deployFn.deployViaSSH(
                         service: params.SERVICE,
                         image: env.IMAGE,

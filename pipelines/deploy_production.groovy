@@ -6,7 +6,11 @@ pipeline {
     parameters {
         string(name: 'SERVICE', defaultValue: '')
         string(name: 'IMAGE_TAG', defaultValue: '')
-        string(name: 'CONFIG_REPO_URL', defaultValue: '')
+        string(name: 'ENV_REPO_URL', defaultValue: '')
+        string(name: 'DEPLOY_HOST', defaultValue: '')
+        string(name: 'SSH_PORT', defaultValue: '22')
+        string(name: 'PORT', defaultValue: '8080')
+        string(name: 'CONTAINER_PORT', defaultValue: '8080')
     }
 
     environment {
@@ -22,16 +26,15 @@ pipeline {
                     deployFn = load 'src/core/deploy.groovy'
                     utilsFn = load 'src/core/utils.groovy'
                     notifyFn = load 'src/integrations/notify.groovy'
-                    if (!params.SERVICE?.trim()) { error("SERVICE is required") }
-                    if (!params.IMAGE_TAG?.trim()) { error("IMAGE_TAG is required") }
+                    utilsFn.validateParams(params, ['SERVICE', 'IMAGE_TAG', 'DEPLOY_HOST'])
                 }
             }
         }
 
-        stage('Checkout Config') {
+        stage('Checkout Env') {
             steps {
                 script {
-                    buildFn.checkoutConfig(params.CONFIG_REPO_URL)
+                    buildFn.checkoutEnv(params.ENV_REPO_URL)
                 }
             }
         }
@@ -45,7 +48,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    def config = utilsFn.loadServiceConfig(params.SERVICE)
+                    def config = utilsFn.buildConfig(params)
                     deployFn.deployViaSSH(
                         service: params.SERVICE,
                         image: env.IMAGE,

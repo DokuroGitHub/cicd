@@ -7,7 +7,7 @@ def deployViaSSH(Map args) {
     }
 
     def envFileFlag = ""
-    if (fileExists("config-source/env.${args.environment}")) {
+    if (fileExists("env-source/env.${args.environment}")) {
         envFileFlag = "--env-file /tmp/${args.service}.env"
     }
 
@@ -17,7 +17,7 @@ def deployViaSSH(Map args) {
         usernameVariable: 'SSH_USER'
     )]) {
         if (envFileFlag) {
-            sh "scp -i \$SSH_KEY -o StrictHostKeyChecking=no -P ${port} config-source/env.${args.environment} \$SSH_USER@${host}:/tmp/${args.service}.env"
+            sh "scp -i \$SSH_KEY -o StrictHostKeyChecking=no -P ${port} env-source/env.${args.environment} \$SSH_USER@${host}:/tmp/${args.service}.env"
         }
         sh """
             ssh -i \$SSH_KEY -o StrictHostKeyChecking=no -p ${port} \$SSH_USER@${host} << 'EOF'

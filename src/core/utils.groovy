@@ -1,19 +1,21 @@
-def validateParams(params) {
-    if (!params.SERVICE?.trim()) { error("SERVICE is required") }
-    if (!params.REPO_URL?.trim()) { error("REPO_URL is required") }
-    if (!params.BRANCH?.trim()) { error("BRANCH is required") }
+def validateParams(Map params, List required) {
+    required.each { key ->
+        if (!params[key]?.trim()) { error("${key} is required") }
+    }
 }
 
-def loadServiceConfig(String serviceName) {
-    def defaults = [dockerfile: 'Dockerfile', dockerContext: '.', port: '8080', containerPort: '8080', deploy: [:]]
-    def configFile = "config/services.yaml"
-
-    if (!fileExists(configFile)) { return defaults }
-
-    def allConfig = readYaml(file: configFile)
-    def svc = allConfig.services?.find { it.name == serviceName }
-
-    return svc ?: defaults
+def buildConfig(Map params) {
+    return [
+        dockerfile:    params.DOCKERFILE ?: 'Dockerfile',
+        dockerContext: params.DOCKER_CONTEXT ?: '.',
+        port:          params.PORT ?: '8080',
+        containerPort: params.CONTAINER_PORT ?: '8080',
+        deploy: [
+            ci:         [host: params.DEPLOY_HOST ?: '', port: params.SSH_PORT ?: '22'],
+            uat:        [host: params.DEPLOY_HOST ?: '', port: params.SSH_PORT ?: '22'],
+            production: [host: params.DEPLOY_HOST ?: '', port: params.SSH_PORT ?: '22']
+        ]
+    ]
 }
 
 return this

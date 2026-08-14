@@ -10,10 +10,10 @@ def checkout(String repoUrl, String branch) {
     }
 }
 
-def checkoutConfig(String configRepoUrl) {
-    if (!configRepoUrl?.trim()) { return }
-    dir("config-source") {
-        git branch: 'main', url: configRepoUrl, credentialsId: getCredentialsId(configRepoUrl)
+def checkoutEnv(String envRepoUrl) {
+    if (!envRepoUrl?.trim()) { return }
+    dir("env-source") {
+        git branch: 'main', url: envRepoUrl, credentialsId: getCredentialsId(envRepoUrl)
     }
 }
 
